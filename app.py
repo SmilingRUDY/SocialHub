@@ -13,7 +13,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-# Database Models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -74,7 +73,6 @@ class Message(db.Model):
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
 
 
-# Routes
 @app.route('/')
 def index():
     if 'user_id' not in session:
@@ -282,10 +280,10 @@ def send_message(receiver_id):
 
     return redirect(url_for('chat', user_id=receiver_id))
 
-    if __name__ == '__main__':
-        with app.app_context():
-            db.drop_all()
-            db.create_all()
-```
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
