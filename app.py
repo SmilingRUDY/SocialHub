@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 
@@ -31,6 +32,7 @@ class User(db.Model):
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(255), default=None)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -59,6 +61,17 @@ class Follow(db.Model):
     follower_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     following_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
 
 
 # Routes
@@ -136,8 +149,18 @@ def create_post():
         return redirect(url_for('login'))
 
     content = request.form.get('content')
-    if content:
-        post = Post(content=content, user_id=session['user_id'])
+    image = None
+
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename:
+            filename = secure_filename(f"{session['user_id']}_{datetime.utcnow().timestamp()}_{file.filename}")
+            os.makedirs('static/uploads', exist_ok=True)
+            file.save(os.path.join('static/uploads', filename))
+            image = filename
+
+    if content or image:
+        post = Post(content=content, user_id=session['user_id'], image=image)
         db.session.add(post)
         db.session.commit()
 
@@ -204,7 +227,64 @@ def follow_user(user_id):
     return redirect(request.referrer or url_for('index'))
 
 
+@app.route('/messages')
+def messages():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    conversations = db.session.query(Message).filter(
+        (Message.sender_id == user.id) | (Message.receiver_id == user.id)
+    ).order_by(Message.created_at.desc()).all()
+
+    unique_users = {}
+    for msg in conversations:
+        other_id = msg.receiver_id if msg.sender_id == user.id else msg.sender_id
+        if other_id not in unique_users:
+            unique_users[other_id] = {'user': User.query.get(other_id), 'unread': 0, 'last_msg': msg}
+        if msg.receiver_id == user.id and not msg.is_read:
+            unique_users[other_id]['unread'] += 1
+
+    conversation_users = list(unique_users.values())
+    return render_template('messages.html', user=user, conversation_users=conversation_users)
+
+
+@app.route('/chat/<int:user_id>')
+def chat(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    current_user = User.query.get(session['user_id'])
+    other_user = User.query.get_or_404(user_id)
+
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user.id)) |
+        ((Message.sender_id == other_user.id) & (Message.receiver_id == current_user.id))
+    ).order_by(Message.created_at.asc()).all()
+
+    Message.query.filter(Message.receiver_id == current_user.id, Message.sender_id == other_user.id).update(
+        {'is_read': True})
+    db.session.commit()
+
+    return render_template('chat.html', current_user=current_user, other_user=other_user, messages=messages)
+
+
+@app.route('/send-message/<int:receiver_id>', methods=['POST'])
+def send_message(receiver_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    content = request.form.get('content')
+    if content:
+        message = Message(sender_id=session['user_id'], receiver_id=receiver_id, content=content)
+        db.session.add(message)
+        db.session.commit()
+
+    return redirect(url_for('chat', user_id=receiver_id))
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
