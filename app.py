@@ -79,12 +79,15 @@ def index():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+    if not user:
+        session.pop('user_id', None)
+        return redirect(url_for('login'))
+
     following_ids = [f.following_id for f in user.following]
     following_ids.append(user.id)
 
     posts = Post.query.filter(Post.user_id.in_(following_ids)).order_by(Post.created_at.desc()).all()
     return render_template('feed.html', posts=posts, user=user)
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
