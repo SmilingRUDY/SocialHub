@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }}'s Profile{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>{{ user.username }}</h2>
+    <p>{{ user.bio }}</p>
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-number">{{ user.posts|length }}</div>
+            <div class="stat-label">Posts</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">{{ user.followers|length }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">{{ user.following|length }}</div>
+            <div class="stat-label">Following</div>
+        </div>
+    </div>
+
+    {% if current_user and current_user.id != user.id %}
+    <form method="POST" action="{{ url_for('follow_user', user_id=user.id) }}" style="display: inline;">
+        <button class="btn">{% if is_following %}Unfollow{% else %}Follow{% endif %}</button>
+    </form>
+    {% endif %}
+</div>
+
+<h3 style="margin-top: 30px;">Posts</h3>
+{% for post in posts %}
+<div class="card post">
+    <div class="post-time">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    <div class="post-content">{{ post.content }}</div>
+    <div class="post-actions">
+        <button class="btn btn-secondary" style="padding: 5px 10px;">👍 {{ post.likes|length }}</button>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+```
+
+## To run it:
+
+1. **Install dependencies** in PyCharm terminal:
+```
+   pip install flask flask-sqlalchemy
+```
+
+2. **Create folder structure**:
+   - Create a `templates` folder in your project root
+   - Add all the HTML files above to that folder
+
+3. **Run the app**:
+```
+   python app.py

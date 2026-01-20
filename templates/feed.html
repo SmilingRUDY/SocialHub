@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Feed{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>What's on your mind?</h2>
+    <form method="POST" action="{{ url_for('create_post') }}">
+        <textarea name="content" placeholder="Share something..." required></textarea>
+        <button class="btn">Post</button>
+    </form>
+</div>
+
+{% for post in posts %}
+<div class="card post">
+    <div class="post-author"><a href="{{ url_for('profile', username=post.author.username) }}" style="color: #1877f2; text-decoration: none;">{{ post.author.username }}</a></div>
+    <div class="post-time">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    <div class="post-content">{{ post.content }}</div>
+
+    <div class="post-actions">
+        <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}" style="display: inline;">
+            <button class="btn btn-secondary" style="padding: 5px 10px;">👍 Like ({{ post.likes|length }})</button>
+        </form>
+        {% if post.user_id == user.id %}
+        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
+            <button class="btn btn-secondary" style="padding: 5px 10px; background: #ffdbdb; color: #d32f2f;">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if post.comments %}
+    <div style="margin-top: 15px;">
+        {% for comment in post.comments %}
+        <div class="comment">
+            <span class="comment-author">{{ comment.user.username }}</span>: {{ comment.content }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" style="margin-top: 10px;">
+        <input type="text" name="content" placeholder="Add a comment..." style="margin: 0;">
+        <button class="btn" style="width: auto; margin-top: 5px; padding: 5px 15px;">Comment</button>
+    </form>
+</div>
+{% endfor %}
+{% endblock %}
