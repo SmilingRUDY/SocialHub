@@ -282,9 +282,10 @@ def send_message(receiver_id):
 
     return redirect(url_for('chat', user_id=receiver_id))
 
-
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    if __name__ == '__main__':
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+```
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
