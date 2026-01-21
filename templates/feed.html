@@ -16,9 +16,22 @@
     <div class="post-content">{{ post.content }}</div>
 
     <div class="post-actions">
-        <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}" style="display: inline;">
-            <button class="btn btn-secondary" style="padding: 5px 10px;">👍 Like ({{ post.likes|length }})</button>
-        </form>
+       <div style="display: flex; gap: 10px; align-items: center;">
+           <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}" style="display: flex; gap: 5px;">
+               <button class="btn btn-secondary" name="reaction" value="love" style="padding: 5px 10px;">❤️ Love</button>
+               <button class="btn btn-secondary" name="reaction" value="haha" style="padding: 5px 10px;">😂 Haha</button>
+               <button class="btn btn-secondary" name="reaction" value="wow" style="padding: 5px 10px;">😮 Wow</button>
+               <button class="btn btn-secondary" name="reaction" value="sad" style="padding: 5px 10px;">😢 Sad</button>
+               <button class="btn btn-secondary" name="reaction" value="angry" style="padding: 5px 10px;">😡 Angry</button>
+           </form>
+           <span style="color: #65676b;">{{ post.likes|length }}</span>
+       </div>
+       {% if post.user_id == user.id %}
+       <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline; margin-top: 10px;">
+           <button class="btn btn-secondary" style="padding: 5px 10px; background: #ffdbdb; color: #d32f2f;">Delete</button>
+       </form>
+       {% endif %}
+   </div>
         {% if post.user_id == user.id %}
         <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
             <button class="btn btn-secondary" style="padding: 5px 10px; background: #ffdbdb; color: #d32f2f;">Delete</button>

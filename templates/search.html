@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Search Users{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>🔍 Search Users</h2>
+    <form method="GET" action="{{ url_for('search') }}" style="display: flex; gap: 10px;">
+        <input type="text" name="q" placeholder="Search by username..." value="{{ query }}" style="flex: 1; margin: 0;">
+        <button class="btn" style="margin: 0;">Search</button>
+    </form>
+</div>
+
+{% if query %}
+    {% if users %}
+        {% for user in users %}
+        <div class="card" style="padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <a href="{{ url_for('profile', username=user.username) }}" style="color: #1877f2; text-decoration: none; font-weight: bold;">
+                        {{ user.username }}
+                    </a>
+                    <p style="color: #65676b; margin: 5px 0;">{{ user.bio }}</p>
+                </div>
+                {% if current_user.id != user.id %}
+                <form method="POST" action="{{ url_for('follow_user', user_id=user.id) }}" style="display: inline;">
+                    <button class="btn">Follow</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="card">
+        <p>No users found matching "{{ query }}"</p>
+    </div>
+    {% endif %}
+{% else %}
+<div class="card">
+    <p>Type a username to search!</p>
+</div>
+{% endif %}
+{% endblock %}
